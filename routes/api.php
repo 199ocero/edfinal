@@ -16,6 +16,7 @@ use App\Http\Controllers\Admin\InstructorController;
 use App\Http\Controllers\Admin\SchoolYearController;
 use App\Http\Controllers\Instructor\ProfileController;
 use App\Http\Controllers\Admin\StudentSectionController;
+use App\Http\Controllers\Instructor\IrregController;
 
 /*
 |--------------------------------------------------------------------------
@@ -163,10 +164,15 @@ Route::group(['middleware'=>['auth:sanctum','verified']],function(){
     /*===============End==============*/
 
     /*===============Instructor - Section==============*/
-    // Get specific section
-    Route::get('/assigned/section/{id}',[SecController::class,'showSection']);
+    // Get specific information
+    Route::get('/assigned/info/{section_id}/{subject_id}/{school_year_id}',[SecController::class,'showInfo']);
     // Get specific student by section
-    Route::get('/assigned/student-section/{id}',[SecController::class,'show']);
+    Route::get('/assigned/student-section/{section_id}/{subject_id}',[SecController::class,'show']);
+    /*===============End==============*/
+
+    /*===============Instructor - Irregular==============*/
+    // Create Irregular Student
+    Route::post('/irregular',[IrregController::class,'store']);
     /*===============End==============*/
 
 });

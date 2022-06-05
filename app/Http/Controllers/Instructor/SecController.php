@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers\Instructor;
 
+use App\Models\Assign;
 use App\Models\Section;
 use App\Models\Student;
+use App\Models\Instructor;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use App\Models\Irregular;
 
 class SecController extends Controller
 {
@@ -36,15 +39,41 @@ class SecController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function show($id)
+    public function show($section_id,$subject_id)
     {
         $user = auth()->user();
         $user = $user->role;
         if($user=='instructor'){
-            $student = Student::where('section_id',$id)->latest()->get();
+            
+            $instructor_id = Instructor::where('instructor_id',auth()->id())->first();
+            $irreg = Irregular::where('instructor_id',$instructor_id->id)
+                            ->where('section_id',$section_id)
+                            ->where('subject_id',$subject_id)
+                            ->get();
+            $irreg_id = [];
+
+            foreach($irreg as $irreg){
+                $irreg_id[]=$irreg->student_id;
+            }
+
+            $studentReg = Student::where('section_id',$section_id)->get();
+            $studentReg = $studentReg->map(function ($item) {
+                $item->status = 'Regular';
+                return $item;
+            });
+
+            $studentIrreg = Student::findMany($irreg_id);
+            $studentIrreg = $studentIrreg->map(function ($item) {
+                $item->status = 'Irregular';
+                return $item;
+            });
+            
+            $mergeStudent = $studentReg->merge($studentIrreg)->sortBy('created_at');
+
+
             $response = [
                 'message' => 'Fetch specific student successfully!',
-                'data' => $student,
+                'data' => $mergeStudent,
             ];
 
             return response($response,200);
@@ -55,17 +84,23 @@ class SecController extends Controller
             return response($response,401);
         }
     }
-    public function showSection($id){
+    public function showInfo($section_id,$subject_id,$school_year_id){
         $user = auth()->user();
         $user = $user->role;
         if($user=='instructor'){
-            $section = Section::find($id);
-        $response = [
-            'message' => 'Fetch specific section successfully!',
-            'data' => $section,
-        ];
+            $instructor_id = Instructor::where('instructor_id',auth()->id())->first();
+            $assign = Assign::with('instructor','section','subject','schoolYear')
+                            ->where('instructor_id',$instructor_id->id)
+                            ->where('section_id',$section_id)
+                            ->where('subject_id',$subject_id)
+                            ->where('school_year_id',$school_year_id)
+                            ->first();
+            $response = [
+                'message' => 'Fetch specific section successfully!',
+                'data' => $assign,
+            ];
 
-        return response($response,200);
+            return response($response,200);
         }else{
             $response = [
                 'message' => 'User unauthorized.',
